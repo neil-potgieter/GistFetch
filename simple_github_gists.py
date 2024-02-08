@@ -4,11 +4,19 @@ import requests
 import os
 
 def fetch_gists(username):
-    """Fetches and displays public gists for a given GitHub username."""
+    """Fetches public gists for a given GitHub username and handles errors."""
     url = f"https://api.github.com/users/{username}/gists"
     response = requests.get(url)
+    if response.status_code == 404:
+        print(f"User {username} not found.")
+        return None
+    elif response.status_code != 200:
+        print(f"Error fetching gists: HTTP {response.status_code}")
+        return None
     gists = response.json()
-
+    if not gists:
+        print("No public gists exist for this user.")
+        return None
     return gists
 
 def save_last_run(gists):
@@ -35,8 +43,10 @@ def main():
     args = parser.parse_args()
 
     gists = fetch_gists(args.username)
-    last_run = read_last_run()
+    if gists is None:
+        return  # Exit if there was an error fetching gists or if no gists exist
 
+    last_run = read_last_run()
     new_gists = filter_new_gists(gists, last_run)
     if new_gists:
         print(f"New gists for {args.username}:")
